@@ -1,33 +1,122 @@
-#ifndef SERVER_H
-#define SERVER_H
+#pragma once
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <cstdint>
+#include <fstream>
+#include <memory>
 
-// Глобальные переменные - база пользователей и файл логов
-extern std::unordered_map<std::string, std::string> users;
-extern std::ofstream logfile;
+/**
+ * Класс для управления системой логирования (шаблон Singleton)
+ * Обеспечивает запись логов в файл и консоль с временными метками
+ */
+class Logger {
+public:
+    static Logger& getInstance();
+    bool openLogFile(const std::string& filename);
+    void logError(const std::string& msg, bool critical);
+    void logMessage(const std::string& msg);
+    void closeLogFile();
 
-// Функции логирования
-void log_error(const std::string& msg, bool critical);
+private:
+    Logger() = default;
+    std::ofstream logfile_;
+};
 
-// Функции аутентификации
-std::string generate_salt();                    // Генерация случайной соли
-std::string sha224(const std::string& str);     // Хеширование SHA-224
-std::string to_upper(const std::string& str);   // Преобразование в верхний регистр
-std::string trim(const std::string& str);       // Удаление пробелов
+/**
+ * Класс для управления базой пользователей
+ * Загружает пользователей из файла, проверяет существование, хранит пароли
+ */
+class UserManager {
+public:
+    bool loadUsers(const std::string& filename);
+    bool userExists(const std::string& username) const;
+    std::string getUserPassword(const std::string& username) const;
+    void addUser(const std::string& username, const std::string& password);
 
-// Работа с пользователями
-bool load_users(const std::string& filename);   // Загрузка базы пользователей
+private:
+    std::unordered_map<std::string, std::string> users_;
+};
 
-// Вычислительные функции
-uint64_t calculate_average(const std::vector<uint64_t>& vec);  // Среднее арифметическое
+/**
+ * Утилитарный класс для криптографических операций
+ * Содержит статические методы для работы с солями, хешами и строками
+ */
+class CryptoUtils {
+public:
+    static std::string generateSalt();
+    static std::string sha224(const std::string& str);
+    static std::string toUpper(const std::string& str);
+    static std::string trim(const std::string& str);
+};
 
-// Сетевое взаимодействие
-bool recv_all(int sock, void* buf, size_t len);  // Гарантированное чтение
-bool send_all(int sock, const void* buf, size_t len);  // Гарантированная отправка
-void handle_client(int client_sock);             // Обработка клиента
+/**
+ * Класс для математических вычислений
+ * Содержит алгоритмы обработки числовых данных
+ */
+class Calculator {
+public:
+    static uint64_t calculateAverage(const std::vector<uint64_t>& vec);
+};
 
-#endif
+/**
+ * Класс для низкоуровневых сетевых операций
+ * Обеспечивает гарантированную отправку и прием данных через сокеты
+ */
+class NetworkUtils {
+public:
+    static bool recvAll(int sock, void* buf, size_t len);
+    static bool sendAll(int sock, const void* buf, size_t len);
+};
+
+/**
+ * Класс для обработки индивидуального клиентского соединения
+ * Управляет всей логикой взаимодействия с одним клиентом
+ */
+class ClientHandler {
+public:
+    ClientHandler(int client_sock, std::shared_ptr<UserManager> user_manager);
+    void handle();
+
+private:
+    bool authenticate();
+    bool processData();
+    bool receiveLogin(std::string& login);
+    bool sendSalt(const std::string& salt);
+    bool receiveHash(std::string& hash);
+    bool verifyHash(const std::string& salt, const std::string& client_hash, 
+                   const std::string& password);
+    
+    int client_sock_;
+    std::shared_ptr<UserManager> user_manager_;
+    std::string current_user_;
+};
+
+/**
+ * Главный класс сервера
+ * Управляет инициализацией, настройкой и основным циклом работы сервера
+ */
+class Server {
+public:
+    Server();
+    ~Server();
+    
+    bool initialize(int argc, char* argv[]);
+    void run();
+    void stop();
+
+private:
+    bool parseArguments(int argc, char* argv[]);
+    bool createSocket();
+    bool setupAddress();
+    bool startListening();
+    void cleanup();
+    
+    int server_sock_;
+    int port_;
+    std::string users_db_file_;
+    std::string log_file_;
+    std::shared_ptr<UserManager> user_manager_;
+    bool running_;
+};

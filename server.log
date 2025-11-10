@@ -1,0 +1,6 @@
+Sat Nov  8 22:14:41 2025 INFO: Server started on port 8888
+Sat Nov  8 22:15:33 2025 INFO: Server started on port 3333
+Sat Nov  8 22:16:15 2025 INFO: Server started on port 33333
+Sat Nov  8 22:16:17 2025 INFO: New client connected
+Sat Nov  8 22:16:17 2025 INFO: Authentication successful for user: user
+Sat Nov  8 22:16:17 2025 INFO: Connection closed for user: user
