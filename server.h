@@ -6,7 +6,14 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
-
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <random>
+#include <ctime>
+#include <algorithm>
+#include <cstring>
+#include <cctype>
 /**
  * Класс для управления системой логирования (шаблон Singleton)
  * Обеспечивает запись логов в файл и консоль с временными метками
